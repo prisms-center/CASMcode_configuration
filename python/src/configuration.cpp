@@ -719,7 +719,7 @@ PYBIND11_MODULE(_configuration, m) {
 
             # iterate over ConfigurationSet contents
             for record in configurationset:
-                configuration_name = record.name
+                configuration_name = record.configuration_name
                 configuration = record.configuration
                 # do something ...
 

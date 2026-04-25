@@ -75,6 +75,7 @@ jsonParser &to_json(occ_events::OccEventCounterParameters const &params,
   _to_json(params.required_cluster_size, "required_cluster_size");
   _to_json(params.excluded_sublattices, "excluded_sublattices");
   _to_json(params.required_sublattices, "required_sublattices");
+  _to_json(params.n_required_sublattices, "n_required_sublattices");
 
   _to_json(params.required_occ_init, "required_occ_init");
 
@@ -141,6 +142,7 @@ void parse(InputParser<occ_events::OccEventCounterParameters> &parser) {
   parser.optional(params.required_cluster_size, "required_cluster_size");
   parser.optional(params.excluded_sublattices, "excluded_sublattices");
   parser.optional(params.required_sublattices, "required_sublattices");
+  parser.optional(params.n_required_sublattices, "n_required_sublattices");
 
   parser.optional(params.required_occ_init, "required_occ_init");
 

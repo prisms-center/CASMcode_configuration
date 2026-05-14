@@ -25,6 +25,7 @@
 #include "casm/configuration/dof_space_analysis.hh"
 #include "casm/configuration/io/json/Configuration_json_io.hh"
 #include "casm/configuration/io/json/Supercell_json_io.hh"
+#include "casm/configuration/supercell_name.hh"
 #include "casm/configuration/io/json/analysis_json_io.hh"
 #include "casm/configuration/irreps/VectorSpaceSymReport.hh"
 #include "casm/configuration/make_simple_structure.hh"
@@ -580,47 +581,118 @@ PYBIND11_MODULE(_configuration, m) {
                      R"pbdoc(
       Data structure for holding / reading / writing supercells.
 
-      Supercell objects hold the symmetry representations needed for applying symmetry
-      to :class:`~libcasm.configuration.Configuration` in that supercell. Since the
-      same symmetry representations apply to all configurations in a particular
-      supercell, a single shared :class:`~libcasm.configuration.Supercell` can be
-      used for all configurations in that supercell. The SupercellSet is a container
-      for storing and accessing these supercells, so that when a new
-      configuration is constructed in an already existing supercell, that supercell can
-      be found and shared.
+      Notes
+      -----
 
-      The SupercellSet holds :class:`~libcasm.configuration.SupercellRecord`, each of
-      which contains a unique shared Supercell as well as its name, whether it is in
-      `canonical form <https://prisms-center.github.io/CASMcode_pydocs/libcasm/xtal/2.0/usage/lattice.html#lattice-canonical-form>`_,
-      and the name of the canonical equivalent supercell. Supercells
-      which are distinct (have different `transformation_matrix_to_super`) but
-      symmetrically equivalent (lattice points are mapped by a crystal group operation)
-      may be stored as separate SupercellRecord in the same SupercellSet.
+      - :class:`~libcasm.configuration.Supercell` objects hold the symmetry \
+        representations needed for applying symmetry to \
+        :class:`~libcasm.configuration.Configuration`. Since the same \
+        representations apply to all configurations in a given supercell, a \
+        single shared :class:`~libcasm.configuration.Supercell` can be used \
+        for all configurations in that supercell. The \
+        :class:`~libcasm.configuration.SupercellSet` is a container for \
+        storing and accessing these shared supercells.
+      - The :class:`~libcasm.configuration.SupercellSet` holds \
+        :class:`~libcasm.configuration.SupercellRecord`, each of which \
+        contains a unique shared :class:`~libcasm.configuration.Supercell` \
+        as well as its name, whether it is in \
+        `canonical form <https://prisms-center.github.io/CASMcode_pydocs/libcasm/xtal/2.0/usage/lattice.html#lattice-canonical-form>`_, \
+        and the name of the canonical equivalent supercell.
+      - Supercells which are distinct (have different \
+        ``transformation_matrix_to_super``) but symmetrically equivalent \
+        (lattice points are mapped by a crystal point group operation) may be \
+        stored as separate :class:`~libcasm.configuration.SupercellRecord` in \
+        the same :class:`~libcasm.configuration.SupercellSet`.
+      - When an attempt is made to add a \
+        :class:`~libcasm.configuration.SupercellRecord` that is already in \
+        the :class:`~libcasm.configuration.SupercellSet`, the existing \
+        :class:`~libcasm.configuration.SupercellRecord` is returned.
 
-      SupercellRecord can be added directly, by the shared Supercell, by
-      transformation matrix, or by the canonical equivalent supercell name.
-      When an attempt is made to add a SupercellRecord that is already in the
-      SupercellSet, the existing SupercellRecord is returned.
 
-      .. rubric:: Special Methods
+      Examples
+      --------
 
-      Additional methods:
+      .. rubric:: Constructing SupercellSet and adding Supercell
 
-      - ``for record in supercell_set``: Iterate over SupercellRecord in the
-        SupercellSet
-      - ``if record in supercell_set``: Check if a
-        :class:`~libcasm.configuration.SupercellRecord` is in the SupercellSet
-      - ``if supercell in supercell_set``: Check if a
-        :class:`~libcasm.configuration.Supercell` is in the SupercellSet
-      - ``if transformation_matrix_to_super in supercell_set``: Check if a
-        :class:`~libcasm.configuration.Supercell` with `transformation_matrix_to_super`
-        (``np.ndarray[np.int[3,3]]``) is in the SupercellSet
-      - ``if canonical_supercell_name in supercell_set``: Check if a canonical
-        :class:`~libcasm.configuration.Supercell` with name
-        `canonical_supercell_name` (``str``) is in the SupercellSet.
-      - ``len(supercell_set)``: Return the number of SupercellRecord in the
-        SupercellSet
+      A :class:`~libcasm.configuration.SupercellSet` can be constructed
+      and :class:`~libcasm.configuration.Supercell` added to the set as
+      follows:
 
+      .. code-block:: Python
+
+          import numpy as np
+          from libcasm.configuration import (
+              Supercell,
+              SupercellSet,
+          )
+
+          # construct SupercellSet
+          supercells = SupercellSet(prim=prim)
+
+          # add Supercell by transformation matrix
+          T = np.array([[2, 0, 0], [0, 2, 0], [0, 0, 1]])
+          supercells.add(T)
+
+          # add Supercell object directly
+          supercells.add(Supercell(prim, T))
+
+          # add by canonical supercell name
+          supercells.add("SCEL4_2_2_1_0_0_0")
+
+
+      .. rubric:: Using SupercellSet
+
+      The contents of :class:`~libcasm.configuration.SupercellSet` are of
+      type :class:`~libcasm.configuration.SupercellRecord`, which can be
+      iterated over using a standard for loop:
+
+      .. code-block:: Python
+
+          # iterate over SupercellSet contents
+          for record in supercells:
+              supercell_name = record.supercell_name
+              supercell = record.supercell
+              # do something ...
+
+      The convention ``x in set`` can be used to check the contents of
+      :class:`~libcasm.configuration.SupercellSet`, using `x` of the
+      following types:
+
+      - ``str``: to check by canonical supercell name
+      - :class:`~libcasm.configuration.Supercell`: to check by supercell
+      - :class:`~libcasm.configuration.SupercellRecord`: to check by record
+      - ``np.ndarray[np.int[3,3]]``: to check by transformation matrix
+
+      .. code-block:: Python
+
+          # check if a Supercell is in SupercellSet by transformation matrix
+          T = np.array([[2, 0, 0], [0, 2, 0], [0, 0, 1]])
+          if T in supercells:
+              # do something ...
+
+          # check by canonical supercell name
+          if "SCEL4_2_2_1_0_0_0" in supercells:
+              # do something ...
+
+      The value ``None`` is returned by `get` methods if the requested
+      supercell is not present:
+
+      .. code-block:: Python
+
+          # get a supercell by canonical name and use it
+          record = supercells.get("SCEL4_2_2_1_0_0_0")
+          if record is not None:
+              supercell = record.supercell
+              # do something ...
+          else:
+              # do something else ...
+
+          # get by transformation matrix
+          T = np.array([[2, 0, 0], [0, 2, 0], [0, 0, 1]])
+          record = supercells.get(T)
+          if record is not None:
+              supercell_name = record.supercell_name
+              # do something ...
 
       )pbdoc");
 
@@ -1394,6 +1466,33 @@ PYBIND11_MODULE(_configuration, m) {
         )pbdoc",
           py::arg("data"), py::arg("supercells"))
       .def(
+          "supercell_name",
+          [](std::shared_ptr<config::Supercell const> const &supercell) {
+            auto const &superlattice = supercell->superlattice;
+            return config::make_supercell_name(superlattice.prim_lattice(),
+                                               superlattice.superlattice());
+          },
+          R"pbdoc(
+          Returns the supercell name.
+
+          The name has the format ``SCELV_A_B_C_D_E_F``, where ``V`` is the
+          supercell volume and ``A_B_C_D_E_F`` are entries in the Hermite
+          normal form of the transformation matrix.
+
+          .. code-block::
+
+              H = [[A, F, E],
+                   [0, B, D],
+                   [0, 0, C]]
+
+              V = A * B * C
+
+          Returns
+          -------
+          supercell_name : str
+              The supercell name.
+          )pbdoc")
+      .def(
           "to_dict",
           [](std::shared_ptr<config::Supercell const> const &supercell) {
             jsonParser json;
@@ -1989,6 +2088,141 @@ PYBIND11_MODULE(_configuration, m) {
           contained in the set.
           )pbdoc",
           py::arg("record"))
+      // get
+      .def(
+          "get_supercell",
+          [](config::SupercellSet &m,
+             std::shared_ptr<config::Supercell const> supercell) -> py::object {
+            auto it = m.find(supercell);
+            if (it == m.end()) {
+              return py::none();
+            }
+            return py::object(py::cast<config::SupercellRecord const &>(*it));
+          },
+          py::return_value_policy::reference_internal,
+          R"pbdoc(
+          Find a SupercellRecord by supercell and return a const reference, \
+          else return None.
+          )pbdoc",
+          py::arg("supercell"))
+      .def(
+          "get",
+          [](config::SupercellSet &m,
+             std::shared_ptr<config::Supercell const> supercell) -> py::object {
+            auto it = m.find(supercell);
+            if (it == m.end()) {
+              return py::none();
+            }
+            return py::object(py::cast<config::SupercellRecord const &>(*it));
+          },
+          py::return_value_policy::reference_internal,
+          R"pbdoc(
+          Find a SupercellRecord by supercell and return a const reference, \
+          else return None (equivalent to \
+          :func:`~libcasm.configuration.SupercellSet.get_supercell`).
+          )pbdoc",
+          py::arg("supercell"))
+      .def(
+          "get_by_transformation_matrix_to_super",
+          [](config::SupercellSet &m,
+             Eigen::Matrix3l const &transformation_matrix_to_super)
+              -> py::object {
+            auto it = m.find(transformation_matrix_to_super);
+            if (it == m.end()) {
+              return py::none();
+            }
+            return py::object(py::cast<config::SupercellRecord const &>(*it));
+          },
+          py::return_value_policy::reference_internal,
+          R"pbdoc(
+          Find a SupercellRecord by transformation matrix and return a const \
+          reference, else return None.
+          )pbdoc",
+          py::arg("transformation_matrix_to_super").noconvert())
+      .def(
+          "get",
+          [](config::SupercellSet &m,
+             Eigen::Matrix3l const &transformation_matrix_to_super)
+              -> py::object {
+            auto it = m.find(transformation_matrix_to_super);
+            if (it == m.end()) {
+              return py::none();
+            }
+            return py::object(py::cast<config::SupercellRecord const &>(*it));
+          },
+          py::return_value_policy::reference_internal,
+          R"pbdoc(
+          Find a SupercellRecord by transformation matrix and return a const \
+          reference, else return None (equivalent to \
+          :func:`~libcasm.configuration.SupercellSet.get_by_transformation_matrix_to_super`).
+          )pbdoc",
+          py::arg("transformation_matrix_to_super").noconvert())
+      .def(
+          "get_record",
+          [](config::SupercellSet &m,
+             config::SupercellRecord const &record) -> py::object {
+            auto it = m.find(record);
+            if (it == m.end()) {
+              return py::none();
+            }
+            return py::object(py::cast<config::SupercellRecord const &>(*it));
+          },
+          py::return_value_policy::reference_internal,
+          R"pbdoc(
+          Find a SupercellRecord by record and return a const reference, \
+          else return None.
+          )pbdoc",
+          py::arg("record"))
+      .def(
+          "get",
+          [](config::SupercellSet &m,
+             config::SupercellRecord const &record) -> py::object {
+            auto it = m.find(record);
+            if (it == m.end()) {
+              return py::none();
+            }
+            return py::object(py::cast<config::SupercellRecord const &>(*it));
+          },
+          py::return_value_policy::reference_internal,
+          R"pbdoc(
+          Find a SupercellRecord by record and return a const reference, \
+          else return None (equivalent to \
+          :func:`~libcasm.configuration.SupercellSet.get_record`).
+          )pbdoc",
+          py::arg("record"))
+      .def(
+          "get_by_canonical_name",
+          [](config::SupercellSet &m,
+             std::string supercell_name) -> py::object {
+            auto it = m.find_canonical_by_name(supercell_name);
+            if (it == m.end()) {
+              return py::none();
+            }
+            return py::object(py::cast<config::SupercellRecord const &>(*it));
+          },
+          py::return_value_policy::reference_internal,
+          R"pbdoc(
+          Find a SupercellRecord by canonical supercell name and return a \
+          const reference, else return None.
+          )pbdoc",
+          py::arg("supercell_name"))
+      .def(
+          "get",
+          [](config::SupercellSet &m,
+             std::string supercell_name) -> py::object {
+            auto it = m.find_canonical_by_name(supercell_name);
+            if (it == m.end()) {
+              return py::none();
+            }
+            return py::object(py::cast<config::SupercellRecord const &>(*it));
+          },
+          py::return_value_policy::reference_internal,
+          R"pbdoc(
+          Find a SupercellRecord by canonical supercell name and return a \
+          const reference, else return None (equivalent to \
+          :func:`~libcasm.configuration.SupercellSet.get_by_canonical_name`).
+          )pbdoc",
+          py::arg("supercell_name"))
       // for x in set
       .def(
           "__iter__",

@@ -287,3 +287,60 @@ def test_SupercellRecord_repr(simple_cubic_binary_prim):
         assert "supercell_name" in out
         assert "canonical_supercell_name" in out
         assert "is_canonical" in out
+
+
+def test_SupercellSet_get_1(simple_cubic_binary_prim):
+    prim = config.Prim(simple_cubic_binary_prim)
+    supercells = config.SupercellSet(prim)
+
+    T = np.array(
+        [
+            [2, 1, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+        ]
+    )
+    supercell = config.make_canonical_supercell(config.Supercell(prim, T))
+    record = supercells.add(supercell)
+    supercell_name = record.supercell_name
+
+    # get by supercell
+    record_1 = supercells.get(supercell)
+    assert record_1 is not None
+    assert record_1 == record
+
+    record_2 = supercells.get_supercell(supercell)
+    assert record_2 == record_1
+
+    # get by transformation matrix
+    canonical_T = supercell.transformation_matrix_to_super
+    record_3 = supercells.get(canonical_T)
+    assert record_3 is not None
+    assert record_3 == record
+
+    record_4 = supercells.get_by_transformation_matrix_to_super(canonical_T)
+    assert record_4 == record_3
+
+    # get by record
+    record_5 = supercells.get(record)
+    assert record_5 is not None
+    assert record_5 == record
+
+    record_6 = supercells.get_record(record)
+    assert record_6 == record_5
+
+    # get by canonical name
+    record_7 = supercells.get(supercell_name)
+    assert record_7 is not None
+    assert record_7 == record
+
+    record_8 = supercells.get_by_canonical_name(supercell_name)
+    assert record_8 == record_7
+
+    # after removal, all get variants return None
+    supercells.remove(supercell)
+
+    assert supercells.get(supercell) is None
+    assert supercells.get(canonical_T) is None
+    assert supercells.get(record) is None
+    assert supercells.get(supercell_name) is None

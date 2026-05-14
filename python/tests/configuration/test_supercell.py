@@ -188,3 +188,23 @@ def test_supercell_io(simple_cubic_binary_prim):
         print(supercell1)
     out = f.getvalue()
     assert "transformation_matrix_to_super" in out
+
+
+def test_supercell_name(simple_cubic_binary_prim):
+    prim = config.Prim(simple_cubic_binary_prim)
+    T = np.array(
+        [
+            [2, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+        ]
+    )
+    supercell = config.Supercell(prim, T)
+
+    # supercell_name() should match to_dict()["supercell_name"]
+    assert supercell.supercell_name() == supercell.to_dict()["supercell_name"]
+
+    # supercell_name() should match SupercellRecord.supercell_name
+    supercells = config.SupercellSet(prim)
+    record = supercells.add(supercell)
+    assert supercell.supercell_name() == record.supercell_name

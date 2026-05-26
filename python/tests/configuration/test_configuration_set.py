@@ -146,6 +146,91 @@ def test_ConfigurationSet_to_dict_2(FCC_binary_Hstrain_noshear_prim):
     assert len(configurations) == 1
 
 
+def test_ConfigurationSet_from_dict_duplicate_warning(simple_cubic_binary_prim):
+    """from_dict warns when the input dict has duplicate configurations."""
+    prim = config.Prim(simple_cubic_binary_prim)
+    supercell = config.make_canonical_supercell(
+        config.Supercell(prim, np.eye(3, dtype=int))
+    )
+    configuration = config.Configuration(supercell)
+
+    configurations = config.ConfigurationSet()
+    configurations.add(configuration)
+    data = configurations.to_dict()
+
+    # Inject a duplicate entry under a different configuration_id
+    scel_name = list(data["supercells"].keys())[0]
+    data["supercells"][scel_name]["1"] = data["supercells"][scel_name]["0"]
+
+    supercells = config.SupercellSet(prim)
+    with pytest.warns(UserWarning, match="from_dict"):
+        configurations_in = config.ConfigurationSet.from_dict(data, supercells)
+
+    assert len(configurations_in) == 1
+
+
+def test_ConfigurationSet_add_record_overwrite_warning(simple_cubic_binary_prim):
+    """add_record warns and overwrites when the same configuration_name is
+    inserted with different DoF."""
+    prim = config.Prim(simple_cubic_binary_prim)
+    supercell = config.make_canonical_supercell(
+        config.Supercell(prim, np.eye(3, dtype=int))
+    )
+    configuration_a = config.Configuration(supercell)
+    configuration_b = config.Configuration(supercell)
+    configuration_b.set_occ(0, 1)
+
+    configurations = config.ConfigurationSet()
+    record_a = configurations.add(configuration_a)
+
+    # Build a record with the same configuration_name but different DoF
+    record_b = config.ConfigurationRecord(
+        configuration_b,
+        record_a.supercell_name,
+        record_a.configuration_id,
+    )
+    assert record_a.configuration_name == record_b.configuration_name
+    assert record_a.configuration != record_b.configuration
+
+    with pytest.warns(UserWarning, match="add_record"):
+        configurations.add_record(record_b)
+
+    assert len(configurations) == 1
+    result = configurations.get(record_a.configuration_name)
+    assert result is not None
+    assert result.configuration == configuration_b
+
+
+def test_Configuration_ConfigurationRecord_comparison_warning(
+    simple_cubic_binary_prim,
+):
+    """Comparing a Configuration with a ConfigurationRecord warns."""
+    prim = config.Prim(simple_cubic_binary_prim)
+    supercell = config.make_canonical_supercell(
+        config.Supercell(prim, np.eye(3, dtype=int))
+    )
+    configuration = config.Configuration(supercell)
+
+    configurations = config.ConfigurationSet()
+    record = configurations.add(configuration)
+
+    with pytest.warns(UserWarning, match="ConfigurationRecord"):
+        result = configuration == record
+    assert result is False
+
+    with pytest.warns(UserWarning, match="ConfigurationRecord"):
+        result = record == configuration
+    assert result is False
+
+    with pytest.warns(UserWarning, match="ConfigurationRecord"):
+        result = configuration != record
+    assert result is True
+
+    with pytest.warns(UserWarning, match="ConfigurationRecord"):
+        result = record != configuration
+    assert result is True
+
+
 def test_ConfigurationRecord_repr(simple_cubic_binary_prim):
     prim = config.Prim(simple_cubic_binary_prim)
     configurations = config.ConfigurationSet()

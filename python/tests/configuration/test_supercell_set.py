@@ -287,3 +287,30 @@ def test_SupercellRecord_repr(simple_cubic_binary_prim):
         assert "supercell_name" in out
         assert "canonical_supercell_name" in out
         assert "is_canonical" in out
+
+
+def test_Supercell_SupercellRecord_comparison_warning(simple_cubic_binary_prim):
+    """Comparing a Supercell with a SupercellRecord warns."""
+    prim = config.Prim(simple_cubic_binary_prim)
+    supercell = config.make_canonical_supercell(
+        config.Supercell(prim, np.eye(3, dtype=int))
+    )
+
+    supercell_set = config.SupercellSet(prim)
+    record = supercell_set.add(supercell)
+
+    with pytest.warns(UserWarning, match="SupercellRecord"):
+        result = supercell == record
+    assert result is False
+
+    with pytest.warns(UserWarning, match="SupercellRecord"):
+        result = record == supercell
+    assert result is False
+
+    with pytest.warns(UserWarning, match="SupercellRecord"):
+        result = supercell != record
+    assert result is True
+
+    with pytest.warns(UserWarning, match="SupercellRecord"):
+        result = record != supercell
+    assert result is True

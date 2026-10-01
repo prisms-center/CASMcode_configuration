@@ -238,11 +238,23 @@ PYBIND11_MODULE(_irreps, m) {
           "__getitem__",
           [](std::shared_ptr<irreps::MatrixRepGroup const> const
                  &matrixrepgroup,
-             Index i) { return matrixrepgroup->element[i]; },
+             Index i) { return matrixrepgroup->element.at(i); },
           py::arg("i"),
           R"pbdoc(
           numpy.ndarray[numpy.float64[m, m]]: The `i`-th element in the group.
           )pbdoc")
+      .def("__len__",
+           [](std::shared_ptr<irreps::MatrixRepGroup const> const
+                  &matrixrepgroup) { return matrixrepgroup->element.size(); })
+      .def(
+          "__iter__",
+          [](std::shared_ptr<irreps::MatrixRepGroup const> const
+                 &matrixrepgroup) {
+            return py::make_iterator(matrixrepgroup->element.begin(),
+                                     matrixrepgroup->element.end());
+          },
+          py::keep_alive<
+              0, 1>() /* Essential: keep object alive while iterator exists */)
       .def_property_readonly(
           "multiplication_table",
           [](std::shared_ptr<irreps::MatrixRepGroup const> const

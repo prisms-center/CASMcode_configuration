@@ -177,10 +177,22 @@ PYBIND11_MODULE(_sym_info, m) {
       .def(
           "__getitem__",
           [](std::shared_ptr<sym_info::SymGroup const> const &symgroup,
-             Index i) { return symgroup->element[i]; },
+             Index i) { return symgroup->element.at(i); },
           py::arg("i"), R"pbdoc(
           libcasm.xtal.SymOp: The `i`-th element in the group.
           )pbdoc")
+      .def("__len__",
+           [](std::shared_ptr<sym_info::SymGroup const> const &symgroup) {
+             return symgroup->element.size();
+           })
+      .def(
+          "__iter__",
+          [](std::shared_ptr<sym_info::SymGroup const> const &symgroup) {
+            return py::make_iterator(symgroup->element.begin(),
+                                     symgroup->element.end());
+          },
+          py::keep_alive<
+              0, 1>() /* Essential: keep object alive while iterator exists */)
       .def_property_readonly(
           "multiplication_table",
           [](std::shared_ptr<sym_info::SymGroup const> const &symgroup) {

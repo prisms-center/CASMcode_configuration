@@ -121,7 +121,7 @@ class PrototypeClusterCounter : public SingleStepBase<OccEventCounterData> {
     return false;
   }
 
-  /// \brief Check if cluster does not include any
+  /// \brief Check if cluster includes sufficient number of
   ///     required sublattice (required_sublattices)
   bool fails_required_sublattices() const {
     if (!data()->params.required_sublattices.has_value()) {
@@ -137,10 +137,20 @@ class PrototypeClusterCounter : public SingleStepBase<OccEventCounterData> {
       if (it != has_sublattice.end()) {
         it->second = true;
       }
+    } 
+    // require at least n_required_sublattices matches
+    // of sublattices in required_sublattices
+    int misses_remaining = 0; // default must match all (no misses)
+    if (data()->params.n_required_sublattices.has_value()) {
+      int n_required_sublattices = *data()->params.n_required_sublattices;
+      misses_remaining =
+          static_cast<int>(has_sublattice.size()) - n_required_sublattices;
     }
     for (auto const &pair : has_sublattice) {
       if (pair.second == false) {
-        return true;
+        if (--misses_remaining < 0) {
+          return true;
+        }
       }
     }
     return false;
@@ -254,7 +264,7 @@ class OccInitCounter : public SingleStepBase<OccEventCounterData> {
   /// \brief Check if initial occupation satisifies
   ///     required occupation (required_occ_init)
   bool fails_required_occ_init() const {
-    if (!data()->params.required_init_atom_count.has_value()) {
+    if (!data()->params.required_occ_init.has_value()) {
       return false;
     }
     std::vector<int> const &occ_init = data()->occ_init_counter();

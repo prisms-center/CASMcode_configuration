@@ -67,6 +67,7 @@ struct OccEventCounterParameters {
   std::optional<int> required_cluster_size;
   std::optional<std::set<int>> excluded_sublattices;
   std::optional<std::set<int>> required_sublattices;
+  std::optional<int> n_required_sublattices;
 
   /// \brief Optional customizeable filter to skip or allow events
   ///     based on the cluster. Return true to allow,

@@ -180,8 +180,15 @@ def make_canonical_prim_periodic_occevents(
 
         Filter by sublattice, using sublattice indices:
 
-        - "excluded_sublattices": Optional[list[int]] = None
-        - "required_sublattices": Optional[list[int]] = None
+        - "excluded_sublattices": Optional[list[int]] = None, Do not include
+          events that contain any of these sublattices.
+        - "required_sublattices": Optional[list[int]] = None, Only include
+          events that contain these sublattices. Events may contain additional
+          sublattices not specified in `required_sublattices`.
+        - "n_required_sublattices": Optional[int] = None, Set how many
+          sublattices from `required_sublattices` the event must contain.
+          The default is that the event must contain every sublattice in
+          `required_sublattices`.
 
         Filter by occupation, using occupation variable on each cluster site:
 

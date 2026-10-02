@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import libcasm.configuration as casmconfig
 import libcasm.configuration.io.spglib as spglib_io
@@ -419,3 +420,66 @@ def test_configuration_with_properties_io(FCC_binary_prim):
     assert "configuration" in out
     assert "global_properties" in out
     assert "local_properties" in out
+
+
+def test_ConfigurationRecord_ConfigurationWithProperties_comparison_warning(
+    FCC_binary_prim,
+):
+    """Comparing a ConfigurationWithProperties with a ConfigurationRecord warns."""
+    prim = casmconfig.Prim(FCC_binary_prim)
+    supercell = casmconfig.make_canonical_supercell(
+        casmconfig.Supercell(prim, np.eye(3, dtype=int))
+    )
+    configuration = casmconfig.Configuration(supercell)
+    configuration_with_properties = casmconfig.ConfigurationWithProperties(
+        configuration
+    )
+
+    configurations = casmconfig.ConfigurationSet()
+    record = configurations.add(configuration)
+
+    with pytest.warns(UserWarning, match="ConfigurationRecord"):
+        result = configuration_with_properties == record
+    assert result is False
+
+    with pytest.warns(UserWarning, match="ConfigurationRecord"):
+        result = record == configuration_with_properties
+    assert result is False
+
+    with pytest.warns(UserWarning, match="ConfigurationRecord"):
+        result = configuration_with_properties != record
+    assert result is True
+
+    with pytest.warns(UserWarning, match="ConfigurationRecord"):
+        result = record != configuration_with_properties
+    assert result is True
+
+
+def test_Configuration_ConfigurationWithProperties_comparison_warning(
+    FCC_binary_prim,
+):
+    """Comparing a Configuration with a ConfigurationWithProperties warns."""
+    prim = casmconfig.Prim(FCC_binary_prim)
+    supercell = casmconfig.make_canonical_supercell(
+        casmconfig.Supercell(prim, np.eye(3, dtype=int))
+    )
+    configuration = casmconfig.Configuration(supercell)
+    configuration_with_properties = casmconfig.ConfigurationWithProperties(
+        configuration
+    )
+
+    with pytest.warns(UserWarning, match="ConfigurationWithProperties"):
+        result = configuration == configuration_with_properties
+    assert result is False
+
+    with pytest.warns(UserWarning, match="ConfigurationWithProperties"):
+        result = configuration_with_properties == configuration
+    assert result is False
+
+    with pytest.warns(UserWarning, match="ConfigurationWithProperties"):
+        result = configuration != configuration_with_properties
+    assert result is True
+
+    with pytest.warns(UserWarning, match="ConfigurationWithProperties"):
+        result = configuration_with_properties != configuration
+    assert result is True

@@ -629,6 +629,19 @@ PYBIND11_MODULE(_configuration, m) {
                                                         R"pbdoc(
      Entry in a :class:`~libcasm.configuration.SupercellSet`
 
+     Notes
+     -----
+
+     - :class:`~libcasm.configuration.SupercellRecord` comparison
+       (``==``, ``!=``, ``<``, etc.) is based on supercell geometry only,
+       ignoring ``supercell_name``. This is equivalent to comparing
+       ``self.supercell == other.supercell``.
+     - To compare a :class:`~libcasm.configuration.Supercell` with a
+       :class:`~libcasm.configuration.SupercellRecord`, compare the
+       supercells directly:
+       ``supercell == record.supercell``. Comparing
+       ``supercell == record`` will warn and return ``False``.
+
    )pbdoc");
 
   // ConfigurationSet -- declare class
@@ -769,7 +782,26 @@ PYBIND11_MODULE(_configuration, m) {
   // ConfigurationRecord -- declare class
   py::class_<config::ConfigurationRecord> pyConfigurationRecord(
       m, "ConfigurationRecord", R"pbdoc(
-     Entry in a :class:`~libcasm.configuration.ConfigurationSet`
+      Entry in a :class:`~libcasm.configuration.ConfigurationSet`
+
+      Notes
+      -----
+
+      - :class:`~libcasm.configuration.ConfigurationRecord` comparison
+        (``==``, ``!=``, ``<``, etc.) is based on DoF values only, ignoring
+        ``configuration_name``. This is equivalent to comparing
+        ``self.configuration == other.configuration``.
+      - To compare a :class:`~libcasm.configuration.Configuration` with a
+        :class:`~libcasm.configuration.ConfigurationRecord`, compare the
+        configurations directly:
+        ``configuration == record.configuration``. Comparing
+        ``configuration == record`` will warn and return ``False``.
+      - To compare a :class:`~libcasm.configuration.ConfigurationWithProperties`
+        with a :class:`~libcasm.configuration.ConfigurationRecord`, compare the
+        configurations directly:
+        ``configuration_with_properties.configuration == record.configuration``.
+        Comparing ``configuration_with_properties == record`` will warn and
+        return ``False``.
 
    )pbdoc");
 
@@ -832,6 +864,17 @@ PYBIND11_MODULE(_configuration, m) {
       - Configuration may be copied with
         :func:`Configuration.copy <libcasm.configuration.Configuration.copy>`,
         `copy.copy`, or `copy.deepcopy`.
+      - To compare a :class:`~libcasm.configuration.Configuration` with a
+        :class:`~libcasm.configuration.ConfigurationRecord`, compare the
+        configurations directly:
+        ``configuration == record.configuration``. Comparing
+        ``configuration == record`` will warn and return ``False``.
+      - To compare a :class:`~libcasm.configuration.Configuration` with a
+        :class:`~libcasm.configuration.ConfigurationWithProperties`, compare
+        the configurations directly:
+        ``configuration == configuration_with_properties.configuration``.
+        Comparing ``configuration == configuration_with_properties`` will
+        warn and return ``False``.
 
 
       .. rubric:: Special Methods
@@ -897,6 +940,18 @@ PYBIND11_MODULE(_configuration, m) {
       - ConfigurationWithProperties may be copied with
         :func:`ConfigurationWithProperties.copy <libcasm.configuration.ConfigurationWithProperties.copy>`,
         `copy.copy`, or `copy.deepcopy`.
+      - To compare a :class:`~libcasm.configuration.Configuration` with a
+        :class:`~libcasm.configuration.ConfigurationWithProperties`, compare
+        the configurations directly:
+        ``configuration_with_properties.configuration == configuration``.
+        Comparing ``configuration == configuration_with_properties`` will
+        warn and return ``False``.
+      - To compare a :class:`~libcasm.configuration.ConfigurationRecord` with a
+        :class:`~libcasm.configuration.ConfigurationWithProperties`, compare
+        the configurations directly:
+        ``configuration_with_properties.configuration == record.configuration``.
+        Comparing ``record == configuration_with_properties`` will warn and
+        return ``False``.
 
     )pbdoc");
 
@@ -905,6 +960,15 @@ PYBIND11_MODULE(_configuration, m) {
       A data structure that stores the supercell transformation matrix and
       the symmetry representations needed for applying symmetry to
       :class:`~libcasm.configuration.Configuration` in that supercell.
+
+      Notes
+      -----
+
+      - To compare a :class:`~libcasm.configuration.Supercell` with a
+        :class:`~libcasm.configuration.SupercellRecord`, compare the
+        supercells directly:
+        ``supercell == record.supercell``. Comparing
+        ``supercell == record`` will warn and return ``False``.
 
       )pbdoc")
       .def(py::init(&make_supercell), py::arg("prim"),
@@ -1365,6 +1429,28 @@ PYBIND11_MODULE(_configuration, m) {
            ""
            "True if supercells are not equal. Only supercells with the same "
            "prim can be compared.")
+      .def(
+          "__eq__",
+          [](std::shared_ptr<config::Supercell const> const &,
+             config::SupercellRecord const &) -> bool {
+            py::module_::import("warnings")
+                .attr("warn")(
+                    "Comparing a Supercell with a SupercellRecord directly. "
+                    "Did you mean to compare supercell == record.supercell?");
+            return false;
+          },
+          py::arg("other"))
+      .def(
+          "__ne__",
+          [](std::shared_ptr<config::Supercell const> const &,
+             config::SupercellRecord const &) -> bool {
+            py::module_::import("warnings")
+                .attr("warn")(
+                    "Comparing a Supercell with a SupercellRecord directly. "
+                    "Did you mean to compare supercell != record.supercell?");
+            return true;
+          },
+          py::arg("other"))
       .def_static(
           "from_dict",
           [](const nlohmann::json &data,
@@ -1490,6 +1576,28 @@ PYBIND11_MODULE(_configuration, m) {
       .def(py::self >= py::self, "Sorts SupercellRecord.")
       .def(py::self == py::self, "Compare SupercellRecord.")
       .def(py::self != py::self, "Compare SupercellRecord.")
+      .def(
+          "__eq__",
+          [](config::SupercellRecord const &,
+             std::shared_ptr<config::Supercell const> const &) -> bool {
+            py::module_::import("warnings")
+                .attr("warn")(
+                    "Comparing a SupercellRecord with a Supercell directly. "
+                    "Did you mean to compare record.supercell == supercell?");
+            return false;
+          },
+          py::arg("other"))
+      .def(
+          "__ne__",
+          [](config::SupercellRecord const &,
+             std::shared_ptr<config::Supercell const> const &) -> bool {
+            py::module_::import("warnings")
+                .attr("warn")(
+                    "Comparing a SupercellRecord with a Supercell directly. "
+                    "Did you mean to compare record.supercell != supercell?");
+            return true;
+          },
+          py::arg("other"))
       .def(
           "copy",
           [](config::SupercellRecord const &self) {
@@ -2147,6 +2255,17 @@ PYBIND11_MODULE(_configuration, m) {
           [](config::ConfigurationSet &m,
              config::ConfigurationRecord const &record)
               -> config::ConfigurationRecord const & {
+            auto name_it = m.find_by_name(record.configuration_name);
+            if (name_it != m.end() &&
+                m.find(record.configuration) == m.end()) {
+              std::stringstream msg;
+              msg << "ConfigurationSet.add_record: a record with "
+                     "configuration_name '"
+                  << record.configuration_name
+                  << "' already exists with different DoF. Overwriting.";
+              py::module_::import("warnings").attr("warn")(msg.str());
+              m.erase_by_name(record.configuration_name);
+            }
             return *m.insert(record).first;
           },
           py::return_value_policy::reference_internal,
@@ -2171,6 +2290,17 @@ PYBIND11_MODULE(_configuration, m) {
           [](config::ConfigurationSet &m,
              config::ConfigurationRecord const &record)
               -> config::ConfigurationRecord const & {
+            auto name_it = m.find_by_name(record.configuration_name);
+            if (name_it != m.end() &&
+                m.find(record.configuration) == m.end()) {
+              std::stringstream msg;
+              msg << "ConfigurationSet.add_record: a record with "
+                     "configuration_name '"
+                  << record.configuration_name
+                  << "' already exists with different DoF. Overwriting.";
+              py::module_::import("warnings").attr("warn")(msg.str());
+              m.erase_by_name(record.configuration_name);
+            }
             return *m.insert(record).first;
           },
           py::return_value_policy::reference_internal,
@@ -2404,7 +2534,28 @@ PYBIND11_MODULE(_configuration, m) {
             jsonParser json{data};
             std::shared_ptr<config::ConfigurationSet> configurations =
                 std::make_shared<config::ConfigurationSet>();
+
+            // Count config entries in the dict before loading
+            std::size_t n_entries = 0;
+            if (data.contains("supercells")) {
+              for (auto const &[scel_name, scel_data] :
+                   data["supercells"].items()) {
+                n_entries += scel_data.size();
+              }
+            }
+
             from_json(*supercells, *configurations, json, supercells->prim());
+
+            if (configurations->size() != n_entries) {
+              std::stringstream msg;
+              msg << "ConfigurationSet.from_dict: the input dict contained "
+                  << n_entries << " configurations, but only "
+                  << configurations->size()
+                  << " unique configurations were inserted "
+                  << "(duplicates were discarded).";
+              py::module_::import("warnings").attr("warn")(msg.str());
+            }
+
             return configurations;
           },
           R"pbdoc(
@@ -3222,6 +3373,52 @@ PYBIND11_MODULE(_configuration, m) {
            "lattice tolerance if there continuous DoF. Only configurations "
            "with the same prim can be compared.")
       .def(
+          "__eq__",
+          [](config::Configuration const &,
+             config::ConfigurationRecord const &) -> bool {
+            py::module_::import("warnings").attr("warn")(
+                "Comparing a Configuration with a ConfigurationRecord "
+                "directly. Did you mean to compare "
+                "configuration == record.configuration?");
+            return false;
+          },
+          py::arg("other"))
+      .def(
+          "__ne__",
+          [](config::Configuration const &,
+             config::ConfigurationRecord const &) -> bool {
+            py::module_::import("warnings").attr("warn")(
+                "Comparing a Configuration with a ConfigurationRecord "
+                "directly. Did you mean to compare "
+                "configuration != record.configuration?");
+            return true;
+          },
+          py::arg("other"))
+      .def(
+          "__eq__",
+          [](config::Configuration const &,
+             config::ConfigurationWithProperties const &) -> bool {
+            py::module_::import("warnings").attr("warn")(
+                "Comparing a Configuration with a ConfigurationWithProperties "
+                "directly. Did you mean to compare "
+                "configuration == "
+                "configuration_with_properties.configuration?");
+            return false;
+          },
+          py::arg("other"))
+      .def(
+          "__ne__",
+          [](config::Configuration const &,
+             config::ConfigurationWithProperties const &) -> bool {
+            py::module_::import("warnings").attr("warn")(
+                "Comparing a Configuration with a ConfigurationWithProperties "
+                "directly. Did you mean to compare "
+                "configuration != "
+                "configuration_with_properties.configuration?");
+            return true;
+          },
+          py::arg("other"))
+      .def(
           "copy",
           [](config::Configuration const &self) {
             return config::Configuration(self);
@@ -3506,6 +3703,54 @@ PYBIND11_MODULE(_configuration, m) {
           float: Scalar global property value.
           )pbdoc",
           py::arg("key"))
+      .def(
+          "__eq__",
+          [](config::ConfigurationWithProperties const &,
+             config::Configuration const &) -> bool {
+            py::module_::import("warnings").attr("warn")(
+                "Comparing a ConfigurationWithProperties with a "
+                "Configuration directly. Did you mean to compare "
+                "configuration_with_properties.configuration == "
+                "configuration?");
+            return false;
+          },
+          py::arg("other"))
+      .def(
+          "__ne__",
+          [](config::ConfigurationWithProperties const &,
+             config::Configuration const &) -> bool {
+            py::module_::import("warnings").attr("warn")(
+                "Comparing a ConfigurationWithProperties with a "
+                "Configuration directly. Did you mean to compare "
+                "configuration_with_properties.configuration != "
+                "configuration?");
+            return true;
+          },
+          py::arg("other"))
+      .def(
+          "__eq__",
+          [](config::ConfigurationWithProperties const &,
+             config::ConfigurationRecord const &) -> bool {
+            py::module_::import("warnings").attr("warn")(
+                "Comparing a ConfigurationWithProperties with a "
+                "ConfigurationRecord directly. Did you mean to compare "
+                "configuration_with_properties.configuration == "
+                "record.configuration?");
+            return false;
+          },
+          py::arg("other"))
+      .def(
+          "__ne__",
+          [](config::ConfigurationWithProperties const &,
+             config::ConfigurationRecord const &) -> bool {
+            py::module_::import("warnings").attr("warn")(
+                "Comparing a ConfigurationWithProperties with a "
+                "ConfigurationRecord directly. Did you mean to compare "
+                "configuration_with_properties.configuration != "
+                "record.configuration?");
+            return true;
+          },
+          py::arg("other"))
       .def(
           "copy",
           [](config::ConfigurationWithProperties const &self) {
